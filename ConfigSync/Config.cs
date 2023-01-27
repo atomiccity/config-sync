@@ -14,13 +14,22 @@ public class Config
 
 	public static Config ReadConfig(string yamlString)
 	{
-		using (var input = new StringReader(yamlString))
-		{
-			var deserializer = new DeserializerBuilder()
-				.WithNamingConvention(CamelCaseNamingConvention.Instance)
-				.Build();
+		using var input = new StringReader(yamlString);
+		var deserializer = new DeserializerBuilder()
+			.WithNamingConvention(CamelCaseNamingConvention.Instance)
+			.Build();
 
-			return deserializer.Deserialize<Config>(input);
+		// Expand any necessary variables
+		var osConfig = new OsConfig();
+		var collapsedConfig = deserializer.Deserialize<Config>(input);
+		var expandedConfig = new Config();
+
+		foreach (var (appName, appConfig) in collapsedConfig.Configs)
+		{
+			var app = new Application { ConfigLocation = osConfig.ExpandVariables(appConfig.ConfigLocation) };
+			expandedConfig.Configs.Add(appName, app);
 		}
+
+		return expandedConfig;
 	}
 }
