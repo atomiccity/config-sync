@@ -3,6 +3,16 @@ using System.Text.RegularExpressions;
 
 namespace ConfigSync;
 
+// TODO:  Create config file for supported tokens
+//     Example:
+//         |tokens:
+//         |  configDir:
+//         |    windows: env(AppData)
+//         |    linux: env(XDG_CONFIG_HOME), env(HOME)/.config
+//         |  homeDir:
+//         |    windows: env(UserProfile)
+//         |    linux: env(HOME)
+
 public class OsConfig
 {
 	private enum OperatingSystem
