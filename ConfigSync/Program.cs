@@ -1,13 +1,10 @@
 ﻿using ConfigSync;
 
-const string Document = @"
-configs:
-  alacritty:
-    configLocation: configDir/alacritty
-  helix-editor:
-    configLocation: configDir/helix
-";
+// Commands:
+//     init - create default tokens.yaml and skeleton software.yaml plus dir structure
+//     restore - restore one or all configs
+//     backup - backup one or all configs
 
-var config = Config.ReadConfig(Document);
-
-System.Console.WriteLine(config.Configs.First().Value.ConfigLocation);
+Console.WriteLine(Config.Example().ToYaml());
+Console.WriteLine("=======================");
+Console.WriteLine(TokenMap.Default().ToYaml());
