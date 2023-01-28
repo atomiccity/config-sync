@@ -7,10 +7,13 @@ public class Config
 {
 	public class Application
 	{
-		public string ConfigLocation { get; init; }
+		public string ConfigLocation { get; init; } = string.Empty;
+		public List<string> Ignore { get; init; } = new();
+		public List<string> NoProcess { get; init; } = new();
 	}
 
-	public Dictionary<string, Application> Configs { get; set; }
+	public string ConfigBackupDir { get; private init; } = string.Empty;
+	public Dictionary<string, Application> Configs { get; private init; } = new();
 
 	public static Config ReadConfig(string yamlString, TokenMap tokenMap, Dictionary<string, string>? envOverrides = null)
 	{
@@ -31,5 +34,33 @@ public class Config
 		}
 
 		return expandedConfig;
+	}
+
+	public static Config Example()
+	{
+		return new Config
+		{
+			ConfigBackupDir = "configs",
+			Configs = new Dictionary<string, Application>
+			{
+				{
+					"MyApp",
+					new Application
+					{
+						ConfigLocation = "$configDir/MyApp",
+						Ignore = { "secret_data/secret.txt" },
+						NoProcess = { "binary_file.bin" },
+					}
+				}
+			}
+		};
+	}
+
+	public string ToYaml()
+	{
+		var serializer = new SerializerBuilder()
+			.WithNamingConvention(CamelCaseNamingConvention.Instance)
+			.Build();
+		return serializer.Serialize(this);
 	}
 }
