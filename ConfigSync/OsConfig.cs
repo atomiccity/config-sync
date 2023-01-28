@@ -3,19 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace ConfigSync;
 
-// TODO:  Create config file for supported tokens
-//     Example:
-//         |tokens:
-//         |  configDir:
-//         |    windows: env(AppData)
-//         |    linux: env(XDG_CONFIG_HOME), env(HOME)/.config
-//         |  homeDir:
-//         |    windows: env(UserProfile)
-//         |    linux: env(HOME)
-
 public class OsConfig
 {
-	private enum OperatingSystem
+	public enum OperatingSystem
 	{
 		Windows,
 		Linux,
@@ -27,11 +17,11 @@ public class OsConfig
 	private readonly Dictionary<string, string> _envOverrides;
 	private readonly OperatingSystem _hostOs;
 
-	public OsConfig(Dictionary<string, string>? envOverrides = null)
+	public OsConfig(TokenMap tokenMap, Dictionary<string, string>? envOverrides = null)
 	{
 		_hostOs = GetOs();
 		_envOverrides = envOverrides ?? new Dictionary<string, string>();
-		_tokenMap = GetTokenMap();
+		_tokenMap = ExpandTokenMap(tokenMap);
 	}
 
 	private static OperatingSystem GetOs()
@@ -54,36 +44,24 @@ public class OsConfig
 		}
 	}
 
-	private Dictionary<string, string> GetTokenMap()
+	private Dictionary<string, string> ExpandTokenMap(TokenMap tokenMap)
 	{
-		var tokens = new Dictionary<string, string>();
+		var expandedTokenMap = new Dictionary<string, string>();
+		var envVarRegex = new Regex(@"env\(<variable>\)");
 
-		// $configDir
-		var token = "$configDir";
-		if (_hostOs == OperatingSystem.Windows)
+		foreach (var (token, value) in tokenMap.ForOs(_hostOs))
 		{
-			tokens.Add(token, GetEnvVar("AppData"));
-		}
-		else
-		{
-			var value = string.IsNullOrEmpty(GetEnvVar("XDG_CONFIG_HOME"))
-				? GetEnvVar("XDG_CONFIG_HOME")
-				: Path.Combine(GetEnvVar("HOME"), ".config");
-			tokens.Add(token, value);
-		}
-
-		// $homeDir
-		token = "$homeDir";
-		if (_hostOs == OperatingSystem.Windows)
-		{
-			tokens.Add(token, GetEnvVar("UserProfile"));
-		}
-		else
-		{
-			tokens.Add(token, GetEnvVar("HOME"));
+			var expandedValue = value;
+			var matches = envVarRegex.Matches(value);
+			foreach (Match match in matches)
+			{
+				var envVar = match.Groups["variable"].Value;
+				expandedValue = expandedValue.Replace($"env({envVar})", GetEnvVar(envVar));
+			}
+			expandedTokenMap.Add(token, expandedValue);
 		}
 
-		return tokens;
+		return expandedTokenMap;
 	}
 
 	private string GetEnvVar(string variable)

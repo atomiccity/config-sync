@@ -4,13 +4,16 @@ public class ConfigRepo
 {
 	private DirectoryInfo _baseDir;
 	private FileInfo _configFile;
+	private FileInfo _tokenFile;
 	private readonly Config _config;
 
-	public ConfigRepo(string baseDir, string configFile = "software.yaml")
+	public ConfigRepo(string baseDir, string configFile = "software.yaml", string tokenFile = "tokens.yaml")
 	{
 		_baseDir = new DirectoryInfo(baseDir);
 		_configFile = new FileInfo(configFile);
-		_config = Config.ReadConfig(_configFile.OpenText().ReadToEnd());
+		_tokenFile = new FileInfo(tokenFile);
+		var tokenMap = TokenMap.ReadConfig(_tokenFile.OpenText().ReadToEnd());
+		_config = Config.ReadConfig(_configFile.OpenText().ReadToEnd(), tokenMap);
 	}
 
 	public void Backup(string appName)
