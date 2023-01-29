@@ -5,6 +5,15 @@
 //     restore - restore one or all configs
 //     backup - backup one or all configs
 
-Console.WriteLine(Config.Example().ToYaml());
-Console.WriteLine("=======================");
-Console.WriteLine(TokenMap.Default().ToYaml());
+// Console.WriteLine(Config.Example().ToYaml());
+// Console.WriteLine("=======================");
+// Console.WriteLine(TokenMap.Default().ToYaml());
+
+class Program
+{
+	public static void Main(string[] args)
+	{
+		var configRepo = new ConfigRepo();
+		configRepo.Backup();
+	}
+}
