@@ -76,13 +76,28 @@ public class OsConfig
 		}
 	}
 
+	public string ExpandEnvVariables(string text)
+	{
+		var envVarRegex = new Regex(@"env\((?<variable>\w+)\)");
+		var matches = envVarRegex.Matches(text);
+		var expandedValue = text;
+
+		foreach (Match match in matches)
+		{
+			var envVar = match.Groups["variable"].Value;
+			expandedValue = expandedValue.Replace($"env({envVar})", GetEnvVar(envVar));
+		}
+
+		return expandedValue;
+	}
+
 	public string ExpandVariables(string text)
 	{
 		var expanded = text;
 
 		foreach (var (token, value) in _tokenMap)
 		{
-			expanded = expanded.Replace(token, value);
+			expanded = expanded.Replace($"${token}", value);
 		}
 
 		return expanded;
@@ -94,6 +109,7 @@ public class OsConfig
 		//        will be children of $homeDir.
 		// NOTE:  On Windows, search should be case-insensitive and directory separators can be
 		//        either '/' or '\'.
+		// BUG:  "c:/Users/Micha" is not being replaced by "$homeDir"
 		var collapsed = text;
 
 		foreach (var (token, value) in _tokenMap)
