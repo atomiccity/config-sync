@@ -38,6 +38,16 @@ public class TokenMap
 						{ OsConfig.OperatingSystem.Windows, "env(AppData)" },
 						{ OsConfig.OperatingSystem.MacOS, "env(HOME)/.config" }
 					}
+				},
+				new Token
+				{
+					Name = "localConfigDir",
+					Values = new Dictionary<OsConfig.OperatingSystem, string>
+					{
+						{ OsConfig.OperatingSystem.Linux, "env(XDG_CONFIG_HOME)" },
+						{ OsConfig.OperatingSystem.Windows, "env(LocalAppData)" },
+						{ OsConfig.OperatingSystem.MacOS, "env(HOME)/.config" }
+					}
 				}
 			}
 		};
