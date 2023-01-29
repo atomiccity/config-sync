@@ -25,11 +25,19 @@ public class Config
 		// Expand any necessary variables
 		var osConfig = new OsConfig(tokenMap, envOverrides);
 		var collapsedConfig = deserializer.Deserialize<Config>(input);
-		var expandedConfig = new Config();
+		var expandedConfig = new Config
+		{
+			ConfigBackupDir = collapsedConfig.ConfigBackupDir
+		};
 
 		foreach (var (appName, appConfig) in collapsedConfig.Configs)
 		{
-			var app = new Application { ConfigLocation = osConfig.ExpandVariables(appConfig.ConfigLocation) };
+			var app = new Application
+			{
+				ConfigLocation = osConfig.ExpandVariables(appConfig.ConfigLocation),
+				Ignore = appConfig.Ignore,
+				NoProcess = appConfig.NoProcess
+			};
 			expandedConfig.Configs.Add(appName, app);
 		}
 
