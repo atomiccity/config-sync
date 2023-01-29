@@ -18,27 +18,14 @@ public class ConfigRepo
 
 	public void Backup(string appName)
 	{
-		/*
-		val appConfig = getConfig().configs[appName] ?: error("Invalid application name")
-		val configRoot = File(appConfig.configLocation)
-		val osConfig = OsConfig()
-
-		configRoot.walkTopDown().forEach { file ->
-			val relativeFile = file.relativeTo(configRoot)
-			val destFile = Path.of(directory, "configs", appName, relativeFile.name).toFile()
-			val contents = file.readText()
-			val collapsed = osConfig.collapseVariables(contents)
-			destFile.writeText(collapsed)
-		}
-		 */
 		var appConfig = _config.Configs[appName];
 		var configRoot = new DirectoryInfo(appConfig.ConfigLocation);
 		TraverseTree(configRoot, appConfig.Ignore, appConfig.NoProcess,
 			(relativePath, file) =>
 			{
 				var collapsedText = _osConfig.CollapseVariables(file.OpenText().ReadToEnd());
-
-				// TODO: Write collapsed text to file in backup location (create dirs, if necessary)
+				var destFile = new FileInfo(Path.Combine(_config.ConfigBackupDir, appName, relativePath));
+				destFile.CreateText().Write(collapsedText);
 			},
 			(relativePath, file) =>
 			{
@@ -56,19 +43,20 @@ public class ConfigRepo
 
 	public void Restore(string appName)
 	{
-		/*
-		val appConfig = getConfig().configs[appName] ?: error("Invalid application name")
-		val configRoot = Path.of(directory, "configs", appName).toFile()
-		val osConfig = OsConfig()
-
-		configRoot.walkTopDown().forEach { file ->
-			val relativeFile = file.relativeTo(configRoot)
-			val destFile = Path.of(appConfig.configLocation, relativeFile.name).toFile()
-			val contents = file.readText()
-			val expanded = osConfig.expandVariables(contents)
-			destFile.writeText(expanded)
-		}
-		 */
+		var appConfig = _config.Configs[appName];
+		var configRoot = new DirectoryInfo(appConfig.ConfigLocation);
+		var srcRoot = new DirectoryInfo(Path.Combine(_config.ConfigBackupDir, appName));
+		TraverseTree(srcRoot, new List<string>(), new List<string>(),
+			(relativePath, file) =>
+			{
+				var expandedText = _osConfig.ExpandVariables(file.OpenText().ReadToEnd());
+				var destFile = new FileInfo(Path.Combine(configRoot.FullName, relativePath));
+				destFile.CreateText().Write(expandedText);
+			},
+			(relativePath, file) =>
+			{
+				file.CopyTo(Path.Combine(configRoot.FullName, relativePath));
+			});
 	}
 
 	public void Restore()
@@ -79,8 +67,8 @@ public class ConfigRepo
 		}
 	}
 
-	private static void TraverseTree(DirectoryInfo baseDir, List<string> ignoreList, List<string> noProcessList,
-		Action<string, FileInfo> process, Action<string, FileInfo> backupOnly)
+	private static void TraverseTree(DirectoryInfo baseDir, ICollection<string> ignoreList,
+		ICollection<string> noProcessList, Action<string, FileInfo> process, Action<string, FileInfo> copy)
 	{
 		var dirs = new Stack<DirectoryInfo>();
 		dirs.Push(baseDir);
@@ -99,13 +87,13 @@ public class ConfigRepo
 				{
 					if (!noProcessList.Contains(relativeName))
 					{
-						// Process and backup
+						// Process and copy
 						process(relativeName, file);
 					}
 					else
 					{
-						// Just backup
-						backupOnly(relativeName, file);
+						// Just copy
+						copy(relativeName, file);
 					}
 				}
 			}
