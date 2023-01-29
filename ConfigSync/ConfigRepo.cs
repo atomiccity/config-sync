@@ -6,7 +6,7 @@ public class ConfigRepo
 	private readonly Config _config;
 	private readonly OsConfig _osConfig;
 
-	public ConfigRepo(string baseDir, string configFile = "software.yaml", string tokenFile = "tokens.yaml")
+	public ConfigRepo(string baseDir = ".", string configFile = "software.yaml", string tokenFile = "tokens.yaml")
 	{
 		_baseDir = new DirectoryInfo(baseDir);
 		var configFileInfo = new FileInfo(configFile);
@@ -19,17 +19,21 @@ public class ConfigRepo
 	public void Backup(string appName)
 	{
 		var appConfig = _config.Configs[appName];
-		var configRoot = new DirectoryInfo(appConfig.ConfigLocation);
+		var configRoot = new DirectoryInfo(_osConfig.ExpandEnvVariables(appConfig.ConfigLocation));
+		var backupDir = Path.Combine(System.IO.Directory.GetCurrentDirectory(), _config.ConfigBackupDir, appName);
 		TraverseTree(configRoot, appConfig.Ignore, appConfig.NoProcess,
 			(relativePath, file) =>
 			{
 				var collapsedText = _osConfig.CollapseVariables(file.OpenText().ReadToEnd());
-				var destFile = new FileInfo(Path.Combine(_config.ConfigBackupDir, appName, relativePath));
+				var destFile = new FileInfo(Path.Combine(backupDir, relativePath));
+				Directory.CreateDirectory(Path.GetDirectoryName(destFile.FullName));
 				destFile.CreateText().Write(collapsedText);
 			},
 			(relativePath, file) =>
 			{
-				file.CopyTo(Path.Combine(_config.ConfigBackupDir, appName, relativePath));
+				var destFile = new FileInfo(Path.Combine(backupDir, relativePath));
+				Directory.CreateDirectory(Path.GetDirectoryName(destFile.FullName));
+				file.CopyTo(destFile.FullName);
 			});
 	}
 
@@ -81,7 +85,8 @@ public class ConfigRepo
 
 			foreach (var file in files)
 			{
-				var relativeName = file.FullName[baseDir.FullName.Length..].Replace("\\", "/");
+				// +1 to include slash prefix of relative path
+				var relativeName = file.FullName[(baseDir.FullName.Length + 1)..].Replace("\\", "/");
 
 				if (!ignoreList.Contains(relativeName))
 				{
