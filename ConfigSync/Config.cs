@@ -34,7 +34,9 @@ public class Config
 		{
 			var app = new Application
 			{
-				ConfigLocation = osConfig.ExpandVariables(appConfig.ConfigLocation),
+				// 1. Replace token with expanded value
+				// 2. Replace any env(...) with environment variables
+				ConfigLocation = osConfig.ExpandEnvVariables(osConfig.ExpandTokens(appConfig.ConfigLocation)),
 				Ignore = appConfig.Ignore,
 				NoProcess = appConfig.NoProcess
 			};

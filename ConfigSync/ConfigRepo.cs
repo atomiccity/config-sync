@@ -19,8 +19,8 @@ public class ConfigRepo
 	public void Backup(string appName)
 	{
 		var appConfig = _config.Configs[appName];
-		var configRoot = new DirectoryInfo(_osConfig.ExpandEnvVariables(appConfig.ConfigLocation));
-		var backupDir = Path.Combine(System.IO.Directory.GetCurrentDirectory(), _config.ConfigBackupDir, appName);
+		var configRoot = new DirectoryInfo(appConfig.ConfigLocation);
+		var backupDir = Path.Combine(Directory.GetCurrentDirectory(), _config.ConfigBackupDir, appName);
 		TraverseTree(configRoot, appConfig.Ignore, appConfig.NoProcess,
 			(relativePath, file) =>
 			{
@@ -53,7 +53,7 @@ public class ConfigRepo
 		TraverseTree(srcRoot, new List<string>(), new List<string>(),
 			(relativePath, file) =>
 			{
-				var expandedText = _osConfig.ExpandVariables(file.OpenText().ReadToEnd());
+				var expandedText = _osConfig.ExpandTokens(file.OpenText().ReadToEnd());
 				var destFile = new FileInfo(Path.Combine(configRoot.FullName, relativePath));
 				destFile.CreateText().Write(expandedText);
 			},
