@@ -25,9 +25,7 @@ public class ConfigRepo
 			(relativePath, file) =>
 			{
 				var collapsedText = _osConfig.CollapseVariables(file.OpenText().ReadToEnd());
-				var destFile = new FileInfo(Path.Combine(backupDir, relativePath));
-				Directory.CreateDirectory(Path.GetDirectoryName(destFile.FullName));
-				destFile.CreateText().Write(collapsedText);
+				File.WriteAllText(Path.Combine(backupDir, relativePath), collapsedText);
 			},
 			(relativePath, file) =>
 			{
