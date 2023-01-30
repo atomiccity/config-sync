@@ -47,18 +47,10 @@ public class OsConfig
 	private Dictionary<string, string> ExpandTokenMap(TokenMap tokenMap)
 	{
 		var expandedTokenMap = new Dictionary<string, string>();
-		var envVarRegex = new Regex(@"env\(<variable>\)");
 
 		foreach (var (token, value) in tokenMap.ForOs(_hostOs))
 		{
-			var expandedValue = value;
-			var matches = envVarRegex.Matches(value);
-			foreach (Match match in matches)
-			{
-				var envVar = match.Groups["variable"].Value;
-				expandedValue = expandedValue.Replace($"env({envVar})", GetEnvVar(envVar));
-			}
-			expandedTokenMap.Add(token, expandedValue);
+			expandedTokenMap.Add(token, ExpandEnvVariables(value));
 		}
 
 		return expandedTokenMap;
@@ -91,7 +83,7 @@ public class OsConfig
 		return expandedValue;
 	}
 
-	public string ExpandVariables(string text)
+	public string ExpandTokens(string text)
 	{
 		var expanded = text;
 
@@ -109,15 +101,16 @@ public class OsConfig
 		//        will be children of $homeDir.
 		// NOTE:  On Windows, search should be case-insensitive and directory separators can be
 		//        either '/' or '\'.
-		// BUG:  "c:/Users/Micha" is not being replaced by "$homeDir"
 		var collapsed = text;
 
 		foreach (var (token, value) in _tokenMap)
 		{
 			if (_hostOs == OperatingSystem.Windows)
 			{
-				collapsed = Regex.Replace(collapsed, value, token, RegexOptions.IgnoreCase);
-				collapsed = Regex.Replace(collapsed, value.Replace("\\", "/"), token, RegexOptions.IgnoreCase);
+				var windowsPattern = value.Replace("\\", "\\\\");
+				var unixPattern = value.Replace("\\", "/");
+				collapsed = Regex.Replace(collapsed, windowsPattern, $"${token}", RegexOptions.IgnoreCase);
+				collapsed = Regex.Replace(collapsed, unixPattern, $"${token}", RegexOptions.IgnoreCase);
 			}
 			else
 			{
