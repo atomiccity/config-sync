@@ -85,8 +85,12 @@ public class ConfigRepo
 
 			foreach (var file in files)
 			{
-				// +1 to include slash prefix of relative path
-				var relativeName = file.FullName[(baseDir.FullName.Length + 1)..].Replace("\\", "/");
+				var relativeName = file.FullName[baseDir.FullName.Length..].Replace("\\", "/");
+
+				if (relativeName.StartsWith("/"))
+				{
+					relativeName = relativeName[1..];
+				}
 
 				if (!ignoreList.Contains(relativeName))
 				{
