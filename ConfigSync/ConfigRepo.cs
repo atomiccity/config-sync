@@ -47,18 +47,24 @@ public class ConfigRepo
 	{
 		var appConfig = _config.Configs[appName];
 		var configRoot = new DirectoryInfo(appConfig.ConfigLocation);
-		var srcRoot = new DirectoryInfo(Path.Combine(_config.ConfigBackupDir, appName));
-		TraverseTree(srcRoot, new List<string>(), new List<string>(),
-			(relativePath, file) =>
-			{
-				var expandedText = _osConfig.ExpandTokens(file.OpenText().ReadToEnd());
-				var destFile = new FileInfo(Path.Combine(configRoot.FullName, relativePath));
-				destFile.CreateText().Write(expandedText);
-			},
-			(relativePath, file) =>
-			{
-				file.CopyTo(Path.Combine(configRoot.FullName, relativePath));
-			});
+		var srcDir = Path.Combine(Directory.GetCurrentDirectory(), _config.ConfigBackupDir, appName);
+		try
+		{
+			TraverseTree(new DirectoryInfo(srcDir), new List<string>(), new List<string>(),
+				(relativePath, file) =>
+				{
+					var expandedText = _osConfig.ExpandTokens(file.OpenText().ReadToEnd());
+					File.WriteAllText(Path.Combine(configRoot.FullName, relativePath), expandedText);
+				},
+				(relativePath, file) =>
+				{
+					file.CopyTo(Path.Combine(configRoot.FullName, relativePath));
+				});
+		}
+		catch (ArgumentException e)
+		{
+			Console.WriteLine(e);
+		}
 	}
 
 	public void Restore()
@@ -73,6 +79,11 @@ public class ConfigRepo
 		ICollection<string> noProcessList, Action<string, FileInfo> process, Action<string, FileInfo> copy)
 	{
 		var dirs = new Stack<DirectoryInfo>();
+
+		if (!baseDir.Exists)
+		{
+			throw new ArgumentException($"Directory {baseDir.FullName} doesn't exist");
+		}
 		dirs.Push(baseDir);
 
 		while (dirs.Count > 0)
